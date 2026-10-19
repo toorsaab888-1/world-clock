@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA CHROMA — Next-Gen ARGB Canvas Clock & World Time</title>
+  <meta name="description" content="A futuristic high-precision Canvas clock featuring dynamic ARGB lighting controls, real-time world regions, buttery smooth 60fps sweep, and responsive glassmorphism UI.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-dark">
+  <!-- Dynamic Ambient ARGB Backlight Glow -->
+  <div id="ambient-glow" class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-badge">
+        <span class="logo-indicator"></span>
+        <span class="logo-text">CHROMA<span class="highlight">CLOCK</span></span>
+        <span class="badge-argb">ARGB v2.4</span>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="status-pill" id="current-active-region-pill">
+        <span class="status-dot"></span>
+        <span id="active-region-name">Local Time</span>
+        <span class="offset-tag" id="active-region-offset">UTC+00:00</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- 12h / 24h format switch -->
+      <button id="toggle-time-format" class="btn-icon-text" title="Toggle 12h / 24h format" aria-label="Toggle 12h / 24h">
+        <span class="btn-icon">⏱️</span>
+        <span id="format-label">24H</span>
+      </button>
+
+      <!-- Smooth sweep vs Ticking hand switch -->
+      <button id="toggle-sweep-mode" class="btn-icon-text" title="Toggle Sweep / Tick Motion" aria-label="Toggle Hand Motion">
+        <span class="btn-icon">⚡</span>
+        <span id="sweep-label">Sweep</span>
+      </button>
+
+      <!-- Sound FX Toggle -->
+      <button id="toggle-sound" class="btn-icon-text" title="Toggle Mechanical Audio Chime" aria-label="Toggle Sound">
+        <span class="btn-icon" id="sound-icon">🔇</span>
+        <span>Sound</span>
+      </button>
+
+      <!-- Fullscreen -->
+      <button id="btn-fullscreen" class="btn-icon-only" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-layout">
+    <!-- Hero Clock Display Section -->
+    <section class="clock-stage-card">
+      <div class="card-glow-border"></div>
+      
+      <!-- Canvas Clock Container -->
+      <div class="canvas-wrapper">
+        <canvas id="clock-canvas" width="560" height="560"></canvas>
+        <div class="canvas-ambient-ring" id="canvas-ambient-ring"></div>
+      </div>
+
+      <!-- Live Digital HUD overlay -->
+      <div class="digital-hud">
+        <div class="hud-time-container">
+          <span class="hud-time" id="digital-time-display">00:00:00</span>
+          <span class="hud-period" id="digital-period-display"></span>
+          <span class="hud-millis" id="digital-millis-display">.000</span>
+        </div>
+        <div class="hud-meta">
+          <span class="hud-date" id="digital-date-display">Monday, October 19, 2026</span>
+          <span class="hud-divider">•</span>
+          <span class="hud-tz" id="digital-tz-display">UTC+05:00</span>
+        </div>
+      </div>
+
+      <!-- Quick Style & Visual Dial Presets -->
+      <div class="dial-mode-selectors">
+        <button class="pill-tab active" data-face="futuristic">Cyber Neo</button>
+        <button class="pill-tab" data-face="minimal">Pure Minimal</button>
+        <button class="pill-tab" data-face="classic">Chronograph</button>
+        <button class="pill-tab" data-face="skeleton">Holo Grid</button>
+      </div>
+    </section>
+
+    <!-- Side Control Hub: ARGB Engine & World Time Selection -->
+    <aside class="control-hub">
+      
+      <!-- Panel Tabs: ARGB Lighting vs World Regions -->
+      <div class="panel-tabs">
+        <button id="tab-btn-argb" class="panel-tab-btn active" data-tab="argb-panel">
+          <span class="tab-indicator"></span>
+          <span class="tab-icon">🌈</span>
+          <span>ARGB Control</span>
+        </button>
+        <button id="tab-btn-regions" class="panel-tab-btn" data-tab="regions-panel">
+          <span class="tab-indicator"></span>
+          <span class="tab-icon">🌍</span>
+          <span>World Regions (<span id="regions-count-badge">8</span>)</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: ARGB Control Panel -->
+      <div id="argb-panel" class="tab-content active">
+        <div class="glass-section">
+          <div class="section-title-row">
+            <h2 class="section-heading">ARGB Light Presets</h2>
+            <span class="live-dot" title="Real-time rendering"></span>
+          </div>
+
+          <div class="preset-grid">
+            <button class="preset-btn active" data-preset="rainbow">
+              <span class="preset-swatch swatch-rainbow"></span>
+              <span class="preset-name">Chroma Spectrum</span>
+            </button>
+            <button class="preset-btn" data-preset="cyberpunk">
+              <span class="preset-swatch swatch-cyberpunk"></span>
+              <span class="preset-name">Cyberpunk Neon</span>
+            </button>
+            <button class="preset-btn" data-preset="aurora">
+              <span class="preset-swatch swatch-aurora"></span>
+              <span class="preset-name">Aurora Boreal</span>
+            </button>
+            <button class="preset-btn" data-preset="solar">
+              <span class="preset-swatch swatch-solar"></span>
+              <span class="preset-name">Solar Flare</span>
+            </button>
+            <button class="preset-btn" data-preset="ice">
+              <span class="preset-swatch swatch-ice"></span>
+              <span class="preset-name">Glacier Pulse</span>
+            </button>
+            <button class="preset-btn" data-preset="synthwave">
+              <span class="preset-swatch swatch-synthwave"></span>
+              <span class="preset-name">Synthwave 80s</span>
+            </button>
+            <button class="preset-btn" data-preset="custom">
+              <span class="preset-swatch swatch-custom" id="custom-preview-swatch"></span>
+              <span class="preset-name">Custom ARGB</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom ARGB Precision Sliders -->
+        <div class="glass-section custom-argb-section" id="custom-sliders-box">
+          <div class="section-title-row">
+            <h2 class="section-heading">Precision ARGB Channels</h2>
+            <div class="color-value-badge" id="color-hex-badge">ARGB(1.0, 0, 240, 255)</div>
+          </div>
+
+          <!-- Alpha Slider -->
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <span class="slider-channel-label alpha-tag">Alpha (A)</span>
+              <span class="slider-val" id="val-alpha">100%</span>
+            </div>
+            <input type="range" id="slider-alpha" min="10" max="100" value="100" class="argb-slider alpha-slider">
+          </div>
+
+          <!-- Red Slider -->
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <span class="slider-channel-label red-tag">Red (R)</span>
+              <span class="slider-val" id="val-red">0</span>
+            </div>
+            <input type="range" id="slider-red" min="0" max="255" value="0" class="argb-slider red-slider">
+          </div>
+
+          <!-- Green Slider -->
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <span class="slider-channel-label green-tag">Green (G)</span>
+              <span class="slider-val" id="val-green">240</span>
+            </div>
+            <input type="range" id="slider-green" min="0" max="255" value="240" class="argb-slider green-slider">
+          </div>
+
+          <!-- Blue Slider -->
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <span class="slider-channel-label blue-tag">Blue (B)</span>
+              <span class="slider-val" id="val-blue">255</span>
+            </div>
+            <input type="range" id="slider-blue" min="0" max="255" value="255" class="argb-slider blue-slider">
+          </div>
+
+          <!-- Animation Tuning -->
+          <div class="tuning-grid">
+            <div class="tune-box">
+              <label for="slider-speed">Animation Speed</label>
+              <input type="range" id="slider-speed" min="1" max="10" value="5">
+            </div>
+            <div class="tune-box">
+              <label for="slider-glow">Glow Intensity</label>
+              <input type="range" id="slider-glow" min="20" max="100" value="75">
+            </div>
+          </div>
+
+          <!-- Quick RGB Color Swatches -->
+          <div class="quick-swatches">
+            <button class="swatch-pick" data-r="255" data-g="0" data-b="85" style="background:#ff0055" title="Neon Pink"></button>
+            <button class="swatch-pick" data-r="0" data-g="240" data-b="255" style="background:#00f0ff" title="Cyber Cyan"></button>
+            <button class="swatch-pick" data-r="112" data-g="0" data-b="255" style="background:#7000ff" title="Electric Purple"></button>
+            <button class="swatch-pick" data-r="0" data-g="255" data-b="136" style="background:#00ff88" title="Matrix Emerald"></button>
+            <button class="swatch-pick" data-r="255" data-g="187" data-b="0" style="background:#ffbb00" title="Amber Gold"></button>
+            <button class="swatch-pick" data-r="255" data-g="60" data-b="0" style="background:#ff3c00" title="Crimson Torch"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: World Regions Panel -->
+      <div id="regions-panel" class="tab-content">
+        <div class="glass-section">
+          <!-- Region Search & Filter -->
+          <div class="region-search-bar">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="region-search-input" placeholder="Search city, country or timezone..." autocomplete="off">
+            <button id="clear-search-btn" class="clear-btn" title="Clear search">✕</button>
+          </div>
+
+          <!-- Primary Region Quick Buttons -->
+          <div class="quick-region-filters">
+            <button class="filter-chip active" data-filter="all">All Cities</button>
+            <button class="filter-chip" data-filter="major">Major Hubs</button>
+            <button class="filter-chip" data-filter="americas">Americas</button>
+            <button class="filter-chip" data-filter="europe">Europe</button>
+            <button class="filter-chip" data-filter="asia">Asia/Pacific</button>
+          </div>
+
+          <!-- Region List Container -->
+          <div class="regions-list-scroll" id="regions-list-container">
+            <!-- Dynamic region cards populated by JS -->
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- World Time Grid Overview Section (Horizontal card cards for quick glance) -->
+  <section class="world-overview-section">
+    <div class="overview-header">
+      <div class="overview-title-group">
+        <h2 class="overview-heading">Global Time Grid</h2>
+        <p class="overview-subtext">Real-time synchronized across major financial and cultural capitals</p>
+      </div>
+      <div class="overview-actions">
+        <button id="btn-reset-local" class="btn-secondary">
+          <span>📍 Revert Clock to Local Time</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="region-cards-carousel" id="featured-cards-carousel">
+      <!-- Populated dynamically with mini visual cards -->
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-left">
+      <span>AURA CHROMA CANVAS CLOCK</span>
+      <span class="footer-dot">•</span>
+      <span>Precision 60FPS ARGB Engine</span>
+    </div>
+    <div class="footer-right">
+      <span>Timezone Engine: <strong id="local-iana-tz">Detecting...</strong></span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
